@@ -1,4 +1,4 @@
-import type { RequestHandler } from 'express';
+import type { RequestHandler, Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../../config/env';
@@ -8,8 +8,8 @@ import {
   type AuthenticatedUser
 } from './auth.types';
 
-export const authenticate: RequestHandler = (req, res, next) => {
-  const authorization = req.headers.authorization;
+export const authenticate: RequestHandler = (req: Request, res: Response, next: NextFunction) => {
+  const authorization = req.get('authorization');
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
     res.status(401).json({
@@ -78,7 +78,7 @@ export const authenticate: RequestHandler = (req, res, next) => {
 export function authorizeRoles(
   ...allowedRoles: AccountRole[]
 ): RequestHandler {
-  return (req, res, next) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.authUser) {
       res.status(401).json({
         success: false,
