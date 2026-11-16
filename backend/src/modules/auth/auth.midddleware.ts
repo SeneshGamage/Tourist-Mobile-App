@@ -1,15 +1,14 @@
-
-import { RequestHandler } from 'express';
+import type { RequestHandler } from 'express';
 import jwt from 'jsonwebtoken';
 
 import { env } from '../../config/env';
-import { AuthenticatedUser, ACCOUNT_ROLES } from './auth.types';
+import {
+  ACCOUNT_ROLES,
+  type AccountRole,
+  type AuthenticatedUser
+} from './auth.types';
 
-export const authenticate: RequestHandler = (
-  req,
-  res,
-  next
-) => {
+export const authenticate: RequestHandler = (req, res, next) => {
   const authorization = req.headers.authorization;
 
   if (!authorization || !authorization.startsWith('Bearer ')) {
@@ -31,16 +30,26 @@ export const authenticate: RequestHandler = (
   }
 
   try {
-    const decoded = jwt.verify(
-      token,
-      env.JWT_ACCESS_SECRET
-    );
+    const decoded = jwt.verify(token, env.JWT_ACCESS_SECRET);
+
+    if (typeof decoded === 'string') {
+      res.status(401).json({
+        success: false,
+        message: 'Invalid authentication token.'
+      });
+      return;
+    }
+
+    const { sub, email, role } = decoded;
+
+    const validRole =
+      typeof role === 'string' &&
+      (ACCOUNT_ROLES as readonly string[]).includes(role);
 
     if (
-      typeof decoded === 'string' ||
-      !decoded.sub ||
-      !decoded.email ||
-      !ACCOUNT_ROLES.includes(decoded.role as any)
+      typeof sub !== 'string' ||
+      typeof email !== 'string' ||
+      !validRole
     ) {
       res.status(401).json({
         success: false,
@@ -50,9 +59,9 @@ export const authenticate: RequestHandler = (
     }
 
     const user: AuthenticatedUser = {
-      id: decoded.sub,
-      email: decoded.email,
-      role: decoded.role as AuthenticatedUser['role']
+      id: sub,
+      email,
+      role: role as AccountRole
     };
 
     req.authUser = user;
@@ -67,7 +76,7 @@ export const authenticate: RequestHandler = (
 };
 
 export function authorizeRoles(
-  ...allowedRoles: AuthenticatedUser['role'][]
+  ...allowedRoles: AccountRole[]
 ): RequestHandler {
   return (req, res, next) => {
     if (!req.authUser) {
