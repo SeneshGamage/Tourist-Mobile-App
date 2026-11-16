@@ -1,20 +1,19 @@
-
 import bcrypt from 'bcryptjs';
-import jwt, { SignOptions } from 'jsonwebtoken';
+import jwt, { type SignOptions } from 'jsonwebtoken';
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '../../config/prisma';
 import { env } from '../../config/env';
 
 import {
-  AccountRole,
-  AuthenticatedUser,
-  JwtPayload
+  type AccountRole,
+  type AuthenticatedUser,
+  type JwtPayload
 } from './auth.types';
 
 import {
-  RegisterInput,
-  LoginInput
+  type RegisterInput,
+  type LoginInput
 } from './auth.schemas';
 
 export class AuthError extends Error {
@@ -59,10 +58,12 @@ async function emailAlreadyExists(email: string): Promise<boolean> {
       where: { email },
       select: { touristId: true }
     }),
+
     prisma.guide.findUnique({
       where: { email },
       select: { guideId: true }
     }),
+
     prisma.vRSP.findUnique({
       where: { email },
       select: { vrspId: true }
